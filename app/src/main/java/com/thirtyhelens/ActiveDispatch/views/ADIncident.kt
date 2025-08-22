@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.google.android.gms.maps.model.LatLng
 
 data class ADIncident(
-    val id: Int,
+    val id: String,
     val title: String,
     val badge: AlertBadge,
     val locationText: String,

@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,9 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Brush
 import com.google.android.gms.maps.model.LatLng
-import com.thirtyhelens.ActiveDispatch.ADIncidentData
-import com.thirtyhelens.ActiveDispatch.formatDistanceAway
-import com.thirtyhelens.ActiveDispatch.mockDispatchPayload
+import com.thirtyhelens.ActiveDispatch.utils.formatDistanceAway
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppColors
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppIcons
 
@@ -95,7 +91,7 @@ fun ADIncidentCellPreview() {
     val incidentLocation = LatLng(36.1627, -86.7816)
 
     val incident = ADIncident(
-        id = 1,
+        id = "asdfawefaw",
         title = "Fight/Assault",
         badge = AlertBadge(
             color = Color(0xFFF03261), // matches accentRed from your palette

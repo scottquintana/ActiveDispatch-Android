@@ -1,6 +1,5 @@
-package com.thirtyhelens.ActiveDispatch
+package com.thirtyhelens.ActiveDispatch.models
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
