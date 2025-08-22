@@ -93,3 +93,12 @@ class LocationManager(private val context: Context) : LocationProvider {
         }.getOrNull()
     }
 }
+
+class FakeLocationProvider(
+    latLng: LatLng = LatLng(36.1627, -86.7816) // downtown Nashville
+) : LocationProvider {
+    private val _loc = MutableStateFlow<LatLng?>(latLng)
+    override val locationFlow: StateFlow<LatLng?> = _loc
+    override fun startLocationUpdates(scope: CoroutineScope) { /* no-op */ }
+    override fun stopLocationUpdates() { /* no-op */ }
+}

@@ -10,7 +10,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.google.android.gms.maps.model.LatLng
 import com.thirtyhelens.ActiveDispatch.ADIncidentsViewModel
 import com.thirtyhelens.ActiveDispatch.models.ADResponse
+import com.thirtyhelens.ActiveDispatch.utils.FakeLocationProvider
 import com.thirtyhelens.ActiveDispatch.views.IncidentMapper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -25,6 +27,7 @@ fun IncidentList(viewModel: ADIncidentsViewModel) {
     }
 }
 
+
 @Preview(showBackground = false)
 @Composable
 fun IncidentListPreview() {
@@ -37,7 +40,9 @@ fun IncidentListPreview() {
         }
     }
 
-    val fakeViewModel = object : ADIncidentsViewModel(locationProvider = null as? com.thirtyhelens.ActiveDispatch.utils.LocationManager) {
+    val fakeViewModel = object : ADIncidentsViewModel(
+        locationProvider = FakeLocationProvider()
+    ) {
         override val incidents: StateFlow<List<ADIncident>> = MutableStateFlow(mockIncidents)
     }
 

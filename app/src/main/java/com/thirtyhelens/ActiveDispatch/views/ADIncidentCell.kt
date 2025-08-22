@@ -83,28 +83,24 @@ fun ADIncidentCell(
 @Preview(showBackground = true)
 @Composable
 fun ADIncidentCellPreview() {
-    val userLocation = Location("").apply {
-        latitude = 36.1600
-        longitude = -86.7800
-    }
-
-    val incidentLocation = LatLng(36.1627, -86.7816)
+    val userLatLng = LatLng(36.1600, -86.7800)
+    val incidentLatLng = LatLng(36.1627, -86.7816)
 
     val incident = ADIncident(
         id = "asdfawefaw",
         title = "Fight/Assault",
         badge = AlertBadge(
-            color = Color(0xFFF03261), // matches accentRed from your palette
-            icon = AppIcons.Shield // or use AppIcons.Bell, etc.
+            color = Color(0xFFF03261),   // your accentRed
+            icon = AppIcons.Shield
         ),
         locationText = formatDistanceAway(
-            userLocation = userLocation,
-            incidentLatLng = incidentLocation,
+            userLocation = userLatLng,
+            incidentLatLng = incidentLatLng,
             neighborhood = "Somewhere"
         ),
         timeAgo = "5 min ago",
         lastUpdated = "2:41 PM",
-        coordinates = LatLng(36.1627, -86.7816)
+        coordinates = incidentLatLng
     )
 
     ADIncidentCell(incident = incident, modifier = Modifier)

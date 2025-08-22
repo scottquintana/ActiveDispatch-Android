@@ -13,6 +13,7 @@ import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.Date
 import java.util.Locale
+import android.util.Log
 
 object IncidentMapper {
 

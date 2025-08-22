@@ -8,12 +8,14 @@ import com.thirtyhelens.ActiveDispatch.views.IncidentMapper
 import com.thirtyhelens.ActiveDispatch.utils.LocationManager
 import com.thirtyhelens.ActiveDispatch.utils.ADNetworkManager
 import com.thirtyhelens.ActiveDispatch.utils.LocationProvider
+import com.thirtyhelens.ActiveDispatch.utils.isEmulator
 import com.thirtyhelens.ActiveDispatch.views.ADIncident
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import android.util.Log
 
 open class ADIncidentsViewModel(
     private val locationProvider: LocationProvider
@@ -28,8 +30,11 @@ open class ADIncidentsViewModel(
 
     fun getIncidents(city: City) {
         viewModelScope.launch {
-            val user = locationProvider.locationFlow.firstOrNull { it != null }
-            val userLatLng: LatLng? = user // already a LatLng in your utils
+            // snapshot; don’t block waiting for GPS
+            val snapshot = locationProvider.locationFlow.value
+
+            // if null AND emulator, use city center so distances render nicely
+            val userLatLng: LatLng? = snapshot ?: if (isEmulator()) city.fallbackLatLng else null
 
             val result = runCatching { ADNetworkManager.fetchCity(city) }
             val list = result.getOrNull()
