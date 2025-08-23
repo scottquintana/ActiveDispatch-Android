@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material3.*
@@ -39,9 +40,9 @@ sealed interface MapOpenMode {
 fun IncidentMapModal(
     incidents: List<ADIncident>,
     mode: MapOpenMode,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onPromoteToFocus: (incidentId: String) -> Unit
 ) {
-    // selection
     val initialIndex = remember(mode, incidents) {
         when (mode) {
             MapOpenMode.AllPins -> 0
@@ -50,11 +51,8 @@ fun IncidentMapModal(
         }
     }
     var selected by remember(mode, incidents) { mutableStateOf(initialIndex) }
-
-    // controller
     var controller by remember { mutableStateOf<IncidentMapController?>(null) }
 
-    // map pins & camera behavior
     LaunchedEffect(controller, incidents) {
         val c = controller ?: return@LaunchedEffect
         val pins = incidents.map {
@@ -67,18 +65,35 @@ fun IncidentMapModal(
         c.setPins(pins)
         if (mode is MapOpenMode.AllPins) c.fitAllPins() else c.focusPin(selected, animate = false)
     }
-    LaunchedEffect(selected, controller) { controller?.focusPin(selected) }
 
+    LaunchedEffect(selected, controller, mode) {
+        if (mode is MapOpenMode.Focus) {
+            controller?.focusPin(selected)
+        }
+    }
+
+    LaunchedEffect(mode, controller) {
+        val c = controller ?: return@LaunchedEffect
+        if (mode is MapOpenMode.AllPins) {
+            c.fitAllPins()
+        } else {
+            c.focusPin(selected, animate = false)
+        }
+    }
     // selected data & gradient
+    val defaultAccent = AppColors.GradientTop
     val current = incidents.getOrNull(selected)
-    val accent = current?.badge?.color ?: Color(0xFF7C4DFF)
+
+    val accent = when (mode) {
+        MapOpenMode.AllPins -> defaultAccent
+        is MapOpenMode.Focus -> current?.badge?.color ?: defaultAccent
+    }
+
     val gradient = remember(accent) {
         Brush.verticalGradient(
             colors = listOf(
-                accent,                         // top matches pin color
-                accent.copy(alpha = 0.75f),
-                Color(0xFF1A1F2E),              // mid
-                Color(0xFF121726)               // bottom
+                accent,                                 // mid
+                AppColors.GradientBottom               // bottom
             )
         )
     }
@@ -86,37 +101,46 @@ fun IncidentMapModal(
     // reset when modal disappears
     DisposableEffect(Unit) { onDispose { selected = 0; controller = null } }
 
-    // full-screen gradient background
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color.Transparent
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradient)
-                .padding(horizontal = 12.dp, vertical = 16.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .windowInsetsPadding(WindowInsets.systemBars),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // close button (top center)
+            // Top row: Close button
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
                 FilledTonalButton(
                     onClick = onClose,
                     shape = RoundedCornerShape(22.dp),
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
-                ) { Text("CLOSE") }
+                    modifier = Modifier.height(26.dp),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("CLOSE")
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Filled.ArrowDropDown,
+                            contentDescription = "Dropdown Icon",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
 
-            // map card centered with rounded corners
+            // Middle row: Map (fills remaining space)
             Card(
                 modifier = Modifier
-                    .align(Alignment.Center)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.78f), // tune the height
+                    .weight(1f),            // <- this makes the map take all remaining height
                 shape = RoundedCornerShape(26.dp),
                 border = BorderStroke(2.dp, Color.White.copy(alpha = 0.08f)),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1221))
@@ -127,51 +151,88 @@ fun IncidentMapModal(
                 )
             }
 
-            // bottom controls (address + arrows)
+            // Bottom controls
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .navigationBarsPadding()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
-                // address / info
-                Text(
-                    text = current?.locationText ?: "",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 8.dp)
-                )
-
-                // arrows row
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp, start = 8.dp, end = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilledTonalIconButton(
-                        onClick = {
-                            if (incidents.isNotEmpty())
-                                selected = (selected - 1 + incidents.size) % incidents.size
-                        }
-                    ) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Prev") }
+                    // Left lane
+                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                        FilledTonalIconButton(
+                            onClick = {
+                                if (incidents.isEmpty()) return@FilledTonalIconButton
+                                val newIndex = (selected - 1 + incidents.size) % incidents.size
+                                if (mode is MapOpenMode.Focus) {
+                                    selected = newIndex
+                                } else {
+                                    onPromoteToFocus(incidents[newIndex].id) // elevate to Focus
+                                }
+                            },
+                            enabled = incidents.size > 1
+                        ) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Previous") }
+                    }
 
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(current?.timeAgo ?: "") }
-                    )
-
-                    FilledTonalIconButton(
-                        onClick = {
-                            if (incidents.isNotEmpty())
-                                selected = (selected + 1) % incidents.size
+                    // Center lane
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        when (mode) {
+                            is MapOpenMode.Focus -> {
+                                Text(
+                                    text = current?.locationText.orEmpty(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = current?.timeAgo.orEmpty(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.DetailText,
+                                    maxLines = 1
+                                )
+                            }
+                            MapOpenMode.AllPins -> {
+                                Text(
+                                    text = "All incidents",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "${incidents.size} total",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.DetailText,
+                                    maxLines = 1
+                                )
+                            }
                         }
-                    ) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next") }
+                    }
+
+                    // Right lane (fixed)
+                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                        FilledTonalIconButton(
+                            onClick = {
+                                if (incidents.isEmpty()) return@FilledTonalIconButton
+                                val newIndex = (selected + 1) % incidents.size
+                                if (mode is MapOpenMode.Focus) {
+                                    selected = newIndex
+                                } else {
+                                    onPromoteToFocus(incidents[newIndex].id) // elevate to Focus
+                                }
+                            },
+                            enabled = incidents.size > 1
+                        ) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next") }
+                    }
                 }
             }
+
         }
     }
 }
@@ -191,7 +252,8 @@ fun IncidentMapModal_AllPins_Preview() {
     IncidentMapModal(
         incidents = demoIncidents,
         mode = MapOpenMode.AllPins,
-        onClose = {}
+        onClose = {},
+        onPromoteToFocus = {}
     )
 }
 
@@ -201,6 +263,7 @@ fun IncidentMapModal_Focused_Preview() {
     IncidentMapModal(
         incidents = demoIncidents,
         mode = MapOpenMode.Focus("2"),
-        onClose = {}
+        onClose = {},
+        onPromoteToFocus = {}
     )
 }

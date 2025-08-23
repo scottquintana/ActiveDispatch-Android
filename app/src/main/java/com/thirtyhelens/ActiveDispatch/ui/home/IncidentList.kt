@@ -17,7 +17,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
-fun IncidentList(viewModel: ADIncidentsViewModel) {
+fun IncidentList(
+    viewModel: ADIncidentsViewModel,
+    onMapIconClick: () -> Unit,
+    onIncidentClick: (incidentId: String) -> Unit
+) {
     val incidents = viewModel.incidents.collectAsState().value
 
     LazyColumn {
@@ -46,5 +50,9 @@ fun IncidentListPreview() {
         override val incidents: StateFlow<List<ADIncident>> = MutableStateFlow(mockIncidents)
     }
 
-    IncidentList(viewModel = fakeViewModel)
+    IncidentList(
+        viewModel = fakeViewModel,
+        onIncidentClick = {},
+        onMapIconClick = {}
+    )
 }
