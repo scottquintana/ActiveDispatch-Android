@@ -1,19 +1,18 @@
-package com.thirtyhelens.ActiveDispatch.views
+package com.thirtyhelens.ActiveDispatch.ui.mapping
 
 import com.google.android.gms.maps.model.LatLng
 import com.thirtyhelens.ActiveDispatch.models.ADPayload
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppColors
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppIcons
 import com.thirtyhelens.ActiveDispatch.utils.formatDistanceAway
-import com.thirtyhelens.ActiveDispatch.views.ADIncident
-import com.thirtyhelens.ActiveDispatch.views.AlertBadge
+import com.thirtyhelens.ActiveDispatch.models.ADIncident
+import com.thirtyhelens.ActiveDispatch.models.AlertBadge
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.Date
 import java.util.Locale
-import android.util.Log
 
 object IncidentMapper {
 

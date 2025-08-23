@@ -1,6 +1,5 @@
-package com.thirtyhelens.ActiveDispatch.views
+package com.thirtyhelens.ActiveDispatch.ui.components
 
-import android.location.Location
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +13,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Brush
 import com.google.android.gms.maps.model.LatLng
+import com.thirtyhelens.ActiveDispatch.models.ADIncident
+import com.thirtyhelens.ActiveDispatch.models.AlertBadge
 import com.thirtyhelens.ActiveDispatch.utils.formatDistanceAway
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppColors
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppIcons

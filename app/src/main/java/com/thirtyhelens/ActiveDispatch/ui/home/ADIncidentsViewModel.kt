@@ -1,21 +1,18 @@
-package com.thirtyhelens.ActiveDispatch
+package com.thirtyhelens.ActiveDispatch.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.thirtyhelens.ActiveDispatch.models.City
-import com.thirtyhelens.ActiveDispatch.views.IncidentMapper
-import com.thirtyhelens.ActiveDispatch.utils.LocationManager
 import com.thirtyhelens.ActiveDispatch.utils.ADNetworkManager
 import com.thirtyhelens.ActiveDispatch.utils.LocationProvider
 import com.thirtyhelens.ActiveDispatch.utils.isEmulator
-import com.thirtyhelens.ActiveDispatch.views.ADIncident
+import com.thirtyhelens.ActiveDispatch.models.ADIncident
+import com.thirtyhelens.ActiveDispatch.ui.mapping.IncidentMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import android.util.Log
 
 open class ADIncidentsViewModel(
     private val locationProvider: LocationProvider

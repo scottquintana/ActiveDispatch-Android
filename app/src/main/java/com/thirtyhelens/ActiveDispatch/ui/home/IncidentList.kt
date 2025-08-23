@@ -1,4 +1,4 @@
-package com.thirtyhelens.ActiveDispatch.views
+package com.thirtyhelens.ActiveDispatch.ui.home
 
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,11 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.android.gms.maps.model.LatLng
-import com.thirtyhelens.ActiveDispatch.ADIncidentsViewModel
 import com.thirtyhelens.ActiveDispatch.models.ADResponse
 import com.thirtyhelens.ActiveDispatch.utils.FakeLocationProvider
-import com.thirtyhelens.ActiveDispatch.views.IncidentMapper
-import kotlinx.coroutines.CoroutineScope
+import com.thirtyhelens.ActiveDispatch.models.ADIncident
+import com.thirtyhelens.ActiveDispatch.ui.components.ADIncidentCell
+import com.thirtyhelens.ActiveDispatch.ui.mapping.IncidentMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
