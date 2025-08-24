@@ -36,10 +36,8 @@ object ADNetworkManager {
 
     // GET https://.../v1/city/{city}
     suspend fun fetchCity(city: City): ADResponse {
-        print("Getting city data")
         val endpoint = "$BASE_URL/${city.path}"
         return client.get {
-            print("Got it")
             url(endpoint)
         }.body()
     }
