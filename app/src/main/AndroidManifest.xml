@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ActiveDispatch"
         tools:targetApi="31">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBlp_Eebz9cOZdBbOo3f0ZbySCd0lTQ9ZM" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -26,9 +29,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${MAPS_API_KEY}" />
     </application>
 
 

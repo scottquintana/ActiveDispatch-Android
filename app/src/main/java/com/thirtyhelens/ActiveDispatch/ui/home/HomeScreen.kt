@@ -165,6 +165,63 @@ fun HomeScreen(
 }
 
 
+@Composable
+private fun LoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Loading incidents…",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xCCFFFFFF)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Optional: replace with your own drawable
+        Icon(
+            imageVector = AppIcons.TriangleExclamation,
+            contentDescription = null,
+            tint = Color(0xFFFFC107), // amber-ish
+            modifier = Modifier.size(56.dp)
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "We couldn’t load incidents.",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Check your internet connection and try again.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xCCFFFFFF)
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text("Try again")
+        }
+    }
+}
+
 /** Top hero with skyline image + gradient + big title */
 @Composable
 private fun HeroHeader(
