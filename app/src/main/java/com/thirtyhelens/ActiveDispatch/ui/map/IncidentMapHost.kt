@@ -3,19 +3,13 @@ package com.thirtyhelens.ActiveDispatch.maps
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.maps.android.compose.*
-import com.google.android.gms.maps.GoogleMap
-import androidx.compose.runtime.saveable.rememberSaveable
-import kotlinx.coroutines.launch
 
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
-import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import com.google.maps.android.compose.*
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb

@@ -51,7 +51,7 @@ object IncidentMapper {
         )
     }
 
-    /* ---------------- helpers ---------------- */
+    // Helpers
 
     private fun badgeFor(code: String): AlertBadge = when (code) {
         "52P", "53P" -> AlertBadge(AppColors.AccentRed, AppIcons.Bell)

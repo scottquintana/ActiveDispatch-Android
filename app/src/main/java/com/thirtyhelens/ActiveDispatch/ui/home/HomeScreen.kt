@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +50,7 @@ import com.thirtyhelens.ActiveDispatch.feature.mapmodal.IncidentMapModal
 import com.thirtyhelens.ActiveDispatch.feature.mapmodal.MapOpenMode
 
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 // ^ add lifecycle-runtime-compose dependency if you don't have it:
 // implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3") // or latest
@@ -55,9 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun HomeScreen(
     initialCity: City = City.NASHVILLE,
-    providedViewModel: ADIncidentsViewModel? = null,
-    onMapClick: () -> Unit = {},
-    onIncidentClick: (ADIncident) -> Unit = {}
+    providedViewModel: ADIncidentsViewModel? = null
 ) {
     val ctx = LocalContext.current.applicationContext
 
@@ -68,6 +69,7 @@ fun HomeScreen(
     var selectedCity by remember { mutableStateOf(initialCity) }
 
     val incidents by viewModel.incidents.collectAsStateWithLifecycle(initialValue = emptyList())
+    val loadState by viewModel.loadState.collectAsStateWithLifecycle()
 
     LaunchedEffect(selectedCity) {
         Log.d("HomeScreen", "Fetching incidents for ${selectedCity.name}")
@@ -91,67 +93,77 @@ fun HomeScreen(
     Scaffold(
         containerColor = AppColors.BackgroundBlue,
         floatingActionButton = {
-            if (!showMap) {
+            if (!showMap && loadState is ADIncidentsViewModel.LoadState.Success) {
                 FloatingActionButton(
-                    onClick = {
-                        mapMode = MapOpenMode.AllPins
-                    },
+                    onClick = { mapMode = MapOpenMode.AllPins },
                     containerColor = Color(0xFF4C54FF),
-                ) {
-                    Icon(imageVector = AppIcons.Map, contentDescription = "Map", tint = Color.White)
-                }
+                ) { Icon(AppIcons.Map, contentDescription = "Map", tint = Color.White) }
             }
         }
-
     ) { _ ->
 
-        LazyColumn(
-            contentPadding = PaddingValues(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Top
         ) {
-            item("hero") {
-                HeroHeader(
-                    title = "Active Dispatch",
-                    imageRes = R.drawable.nashville_header,
-                )
-                Spacer(Modifier.height(8.dp))
-            }
+            // Header stays at the top, outside the refresh area
+            HeroHeader(title = "Active Dispatch", imageRes = R.drawable.nashville_header)
+            Spacer(Modifier.height(8.dp))
 
-            items(items = incidents, key = { it.id }) { incident ->
-                val interaction = remember { MutableInteractionSource() }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .clickable(
-                            interactionSource = interaction,
-                            indication = LocalIndication.current,
-                        ) { onIncidentClick(incident) }
-                ) {
-                    ADIncidentCell(incident = incident, modifier = Modifier.fillMaxWidth())
+            when (val s = loadState) {
+                ADIncidentsViewModel.LoadState.Idle,
+                ADIncidentsViewModel.LoadState.Loading -> {
+                    LoadingState()
+                }
+
+                is ADIncidentsViewModel.LoadState.Success -> {
+                    // Pull‑to‑refresh wraps ONLY the scrolling list content
+                    RefreshableIncidents(
+                        isLoading = loadState is ADIncidentsViewModel.LoadState.Loading,
+                        onRefresh = { viewModel.getIncidents(selectedCity) }
+                    ) {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(bottom = 20.dp)
+                        ) {
+                            items(s.data, key = { it.id }) { incident ->
+                                val interaction = remember { MutableInteractionSource() }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp)
+                                        .clickable(
+                                            interactionSource = interaction,
+                                            indication = LocalIndication.current,
+                                        ) { onIncidentClick(incident) }
+                                ) {
+                                    ADIncidentCell(incident = incident, modifier = Modifier.fillMaxWidth())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                is ADIncidentsViewModel.LoadState.Error -> {
+                    when (s) {
+                        ADIncidentsViewModel.LoadState.Error.LocationUnavailable ->
+                            ErrorState(
+                                message = "We couldn’t access your location.",
+                                onRetry = { viewModel.getIncidents(selectedCity) }
+                            )
+
+                        is ADIncidentsViewModel.LoadState.Error.Network ->
+                            ErrorState(
+                                message = "We couldn’t load incidents.",
+                                onRetry = { viewModel.getIncidents(selectedCity) }
+                            )
+                    }
                 }
             }
-
-            if (incidents.isEmpty()) {
-                item("loading") {
-                    Text(
-                        text = "Loading incidents…",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 24.dp)
-                            .wrapContentWidth(Alignment.CenterHorizontally),
-                        color = Color(0x99FFFFFF)
-                    )
-                }
-            }
-
-            item("bottomSpacer") { Spacer(Modifier.height(20.dp)) }
         }
 
         if (mapMode != null) {
-            SlideUpDialog(
-                onRequestClose = { mapMode = null } // close -> clear state
-            ) {
+            SlideUpDialog(onRequestClose = { mapMode = null }) {
                 IncidentMapModal(
                     incidents = incidents,
                     mode = mapMode!!,
@@ -164,8 +176,83 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RefreshableIncidents(
+    isLoading: Boolean,          // e.g., loadState is Loading
+    onRefresh: () -> Unit,       // call viewModel.getIncidents(...)
+    content: @Composable () -> Unit
+) {
+    val pullState = rememberPullToRefreshState()
 
-/** Top hero with skyline image + gradient + big title */
+    PullToRefreshBox(
+        isRefreshing = isLoading,
+        onRefresh = onRefresh,
+        state = pullState,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        content()
+    }
+}
+@Composable
+private fun LoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Loading incidents…",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xCCFFFFFF)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Optional: replace with your own drawable
+        Icon(
+            imageVector = AppIcons.TriangleExclamation,
+            contentDescription = null,
+            tint = Color(0xFFFFC107), // amber-ish
+            modifier = Modifier.size(56.dp)
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "We couldn’t load incidents.",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Check your internet connection and try again.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xCCFFFFFF)
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text("Try again")
+        }
+    }
+}
+
+// Top hero with skyline image + gradient + big title
+// Will need to be dynamic when multi city is implemented
 @Composable
 private fun HeroHeader(
     title: String,
@@ -202,7 +289,7 @@ private fun HeroHeader(
     }
 }
 
-/* ------------------ Preview scaffolding (unchanged) ------------------ */
+// Preview scaffolding
 
 private class FakeLocationProvider(
     latLng: LatLng? = LatLng(36.1627, -86.7816)
@@ -234,6 +321,5 @@ fun HomeScreenPreview() {
 
     HomeScreen(
         providedViewModel = fakeVm,
-        onMapClick = {}
     )
 }

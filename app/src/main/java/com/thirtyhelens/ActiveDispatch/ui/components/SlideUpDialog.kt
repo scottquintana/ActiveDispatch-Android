@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,9 +26,9 @@ fun SlideUpDialog(
     content: @Composable () -> Unit
 ) {
     // Full-screen dialog (so it truly overlays the screen)
-    androidx.compose.ui.window.Dialog(
+    Dialog(
         onDismissRequest = onRequestClose,
-        properties = androidx.compose.ui.window.DialogProperties(
+        properties = DialogProperties(
             dismissOnClickOutside = true,
             usePlatformDefaultWidth = false // full width
         )
