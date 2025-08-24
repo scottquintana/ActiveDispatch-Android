@@ -10,15 +10,9 @@ import io.ktor.client.request.url
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import com.thirtyhelens.ActiveDispatch.models.ADResponse
+import com.thirtyhelens.ActiveDispatch.models.City
 
 private const val BASE_URL = "https://activedispatch-313918647466.us-east4.run.app/v1/city"
-
-enum class City(val path: String) {
-    NASHVILLE("nashville"),
-    PDX("pdx"),
-    SF("sf");
-}
-
 object ADNetworkManager {
 
     // Reusable client; swap OkHttp -> CIO for KMP later, or use expect/actual.
@@ -37,13 +31,11 @@ object ADNetworkManager {
             connectTimeoutMillis = 10_000
             socketTimeoutMillis = 15_000
         }
-        // You can add Logging plugin here if you want verbose logging in debug builds.
+        // Add Logging plugin here if we want verbose logging in debug builds.
     }
 
-    /**
-     * GET https://.../v1/city/{city}
-     */
-    suspend fun fetchCity(city: com.thirtyhelens.ActiveDispatch.models.City): ADResponse {
+    // GET https://.../v1/city/{city}
+    suspend fun fetchCity(city: City): ADResponse {
         print("Getting city data")
         val endpoint = "$BASE_URL/${city.path}"
         return client.get {

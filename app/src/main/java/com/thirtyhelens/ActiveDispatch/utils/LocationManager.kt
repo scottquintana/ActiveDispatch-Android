@@ -80,10 +80,8 @@ class LocationManager(private val context: Context) : LocationProvider {
         }
     }
 
-    /**
-     * You likely don't need this anymore since the API now provides lat/lon.
-     * Keeping it for fallback/tools, but aligned to LatLng and marked deprecated.
-     */
+    // Likely don't need this anymore since the API now provides lat/lon.
+    // Keeping it for fallback/tools, but aligned to LatLng and marked deprecated.
     @Deprecated("API now provides lat/lon. Prefer using payload coordinates.")
     suspend fun coordinatesForAddress(address: String): LatLng? = withContext(Dispatchers.IO) {
         runCatching {

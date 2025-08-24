@@ -16,12 +16,11 @@ import java.util.Locale
 
 object IncidentMapper {
 
-    /**
-     * Maps a network payload + (optional) user location into a UI-friendly ADIncident.
-     * - Computes distance text (if user location is available)
-     * - Formats time-ago and last-updated text
-     * - Picks the right badge based on incident type code
-     */
+    // Maps a network payload + (optional) user location into a UI-friendly ADIncident.
+    // - Computes distance text (if user location is available)
+    // - Formats time-ago and last-updated text
+    // - Picks the right badge based on incident type code
+
     fun toUi(
         payload: ADPayload,
         userLatLng: LatLng?

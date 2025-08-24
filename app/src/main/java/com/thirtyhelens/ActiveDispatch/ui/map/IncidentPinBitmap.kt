@@ -1,4 +1,3 @@
-// com/thirtyhelens/ActiveDispatch/maps/IncidentPinBitmap.kt
 package com.thirtyhelens.ActiveDispatch.maps
 
 import android.content.Context

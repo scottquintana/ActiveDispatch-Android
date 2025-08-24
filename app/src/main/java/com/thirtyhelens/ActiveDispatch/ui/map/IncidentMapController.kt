@@ -1,4 +1,3 @@
-// com/thirtyhelens/ActiveDispatch/maps/IncidentMapController.kt
 package com.thirtyhelens.ActiveDispatch.maps
 
 import com.google.android.gms.maps.GoogleMap
@@ -8,8 +7,6 @@ import kotlinx.coroutines.CoroutineScope
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.thirtyhelens.ActiveDispatch.models.City
-
-//import com.google.maps.android.ktx.awaitMap
 
 class IncidentMapController internal constructor(
     private val scope: CoroutineScope,
@@ -36,7 +33,7 @@ class IncidentMapController internal constructor(
         pins.addAll(newPins)
     }
 
-    /** Zooms/animates camera to include all pins */
+    // Zooms/animates camera to include all pins
     fun fitAllPins() {
         val m = map ?: return
         if (pins.isEmpty()) return
@@ -47,7 +44,7 @@ class IncidentMapController internal constructor(
         m.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, cameraPaddingPx))
     }
 
-    /** Focuses on a pin by list index */
+    // Focuses on a pin by list index
     fun focusPin(index: Int, animate: Boolean = true, zoom: Float = 14f) {
         val m = map ?: return
         val p = pins.getOrNull(index) ?: return
