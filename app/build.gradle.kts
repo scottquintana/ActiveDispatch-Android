@@ -63,6 +63,8 @@ dependencies {
     implementation(libs.ktor.content.negotiation)
     implementation(libs.ktor.serialization.json)
     implementation(libs.kotlinx.serialization.json)
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.maps.android:maps-compose:2.11.0")
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

@@ -156,6 +156,7 @@ fun HomeScreen(
                     incidents = incidents,
                     mode = mapMode!!,
                     onClose = { mapMode = null },
+                    selectedCity = selectedCity,
                     onPromoteToFocus = { id -> mapMode = MapOpenMode.Focus(id) }
                 )
             }

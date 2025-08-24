@@ -1,6 +1,5 @@
 package com.thirtyhelens.ActiveDispatch.feature.mapmodal
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,10 +20,17 @@ import com.thirtyhelens.ActiveDispatch.maps.IncidentMapController
 import com.thirtyhelens.ActiveDispatch.maps.IncidentMapHost
 import com.thirtyhelens.ActiveDispatch.models.ADIncident
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.thirtyhelens.ActiveDispatch.maps.buildIncidentMarkerDescriptor
 import com.thirtyhelens.ActiveDispatch.models.AlertBadge
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppColors
 import com.thirtyhelens.ActiveDispatch.ui.theme.AppIcons
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.thirtyhelens.ActiveDispatch.models.City
+
 /**
  * Mode the modal opens in:
  *  - AllPins: show all pins (map button)
@@ -36,10 +41,16 @@ sealed interface MapOpenMode {
     data class Focus(val incidentId: String) : MapOpenMode
 }
 
+sealed interface MapUiState {
+    data object AllPins : MapUiState
+    data class Focus(val selectedIndex: Int) : MapUiState
+}
+
 @Composable
 fun IncidentMapModal(
     incidents: List<ADIncident>,
     mode: MapOpenMode,
+    selectedCity: City,
     onClose: () -> Unit,
     onPromoteToFocus: (incidentId: String) -> Unit
 ) {
@@ -52,18 +63,65 @@ fun IncidentMapModal(
     }
     var selected by remember(mode, incidents) { mutableStateOf(initialIndex) }
     var controller by remember { mutableStateOf<IncidentMapController?>(null) }
+    val ctx = LocalContext.current
+    val isDark = isSystemInDarkTheme()
+    val selectedId: String? = incidents.getOrNull(selected)?.id
 
-    LaunchedEffect(controller, incidents) {
-        val c = controller ?: return@LaunchedEffect
-        val pins = incidents.map {
-            IncidentMapController.Pin(
-                id = it.id,
-                title = it.title,
-                position = it.coordinates ?: LatLng(0.0, 0.0)
-            )
+    val MapUiStateSaver = Saver<MapUiState, Int>(
+        save = { state -> if (state is MapUiState.Focus) state.selectedIndex else -1 },
+        restore = { idx -> if (idx >= 0) MapUiState.Focus(idx) else MapUiState.AllPins }
+    )
+
+    var uiState by rememberSaveable(stateSaver = MapUiStateSaver) {
+        mutableStateOf<MapUiState>(MapUiState.AllPins)
+    }
+
+
+// react ONLY when parent mode changes to Focus
+    LaunchedEffect(mode, incidents) {
+        when (mode) {
+            is MapOpenMode.Focus -> {
+                val idx = incidents.indexOfFirst { it.id == mode.incidentId }.takeIf { it >= 0 } ?: 0
+                uiState = MapUiState.Focus(idx)
+            }
+            MapOpenMode.AllPins -> {
+                // do NOT force uiState back to AllPins here;
+                // allow arrows/taps to promote locally
+            }
         }
-        c.setPins(pins)
-        if (mode is MapOpenMode.AllPins) c.fitAllPins() else c.focusPin(selected, animate = false)
+    }
+    val pinsForUi = incidents.mapIndexedNotNull { index, inc ->
+        val pos = inc.coordinates ?: return@mapIndexedNotNull null
+        val showLabel = when (val s = uiState) {
+            MapUiState.AllPins  -> false
+            is MapUiState.Focus -> index == s.selectedIndex
+        }
+        val descriptor = buildIncidentMarkerDescriptor(
+            context = ctx,
+            icon = inc.badge.icon,
+            fillColor = inc.badge.color,
+            label = if (showLabel) inc.title else null,
+            labelColor = if (isDark) Color.White else Color.Black
+        )
+        IncidentMapController.Pin(
+            id = inc.id,
+            title = inc.title,        // not used by Google info window
+            position = pos,
+            icon = descriptor,
+            anchorU = 0.5f,
+            anchorV = 1.0f
+        )
+    }
+
+    // Push pins to the map
+    LaunchedEffect(controller, pinsForUi, uiState, selectedCity) {
+        val c = controller ?: return@LaunchedEffect
+        c.setPins(pinsForUi)
+        withFrameNanos { }
+        when (val s = uiState) {
+            MapUiState.AllPins  -> c.fitAllPinsOrCenterFallback(selectedCity, 11f)
+            is MapUiState.Focus -> c.focusPin(s.selectedIndex, animate = false)
+        }
     }
 
     LaunchedEffect(selected, controller, mode) {
@@ -82,20 +140,90 @@ fun IncidentMapModal(
     }
     // selected data & gradient
     val defaultAccent = AppColors.GradientTop
-    val current = incidents.getOrNull(selected)
 
-    val accent = when (mode) {
-        MapOpenMode.AllPins -> defaultAccent
-        is MapOpenMode.Focus -> current?.badge?.color ?: defaultAccent
+    val selectedIndex: Int? = (uiState as? MapUiState.Focus)?.selectedIndex
+    val current: ADIncident? = selectedIndex?.let { idx -> incidents.getOrNull(idx) }
+
+    val accent = when (uiState) {
+        MapUiState.AllPins  -> AppColors.GradientTop
+        is MapUiState.Focus -> current?.badge?.color ?: AppColors.GradientTop
+    }
+
+    // derive selection from uiState
+
+// render bottom info from uiState (your block)
+    when (uiState) {
+        is MapUiState.Focus -> {
+            Text(
+                text = current?.locationText.orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                maxLines = 1
+            )
+            Text(
+                text = current?.timeAgo.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.DetailText,
+                maxLines = 1
+            )
+        }
+        MapUiState.AllPins -> {
+            Text(
+                text = "All incidents",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.85f),
+                maxLines = 1
+            )
+            Text(
+                text = "${incidents.size} total",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.DetailText,
+                maxLines = 1
+            )
+        }
     }
 
     val gradient = remember(accent) {
         Brush.verticalGradient(
             colors = listOf(
-                accent,                                 // mid
-                AppColors.GradientBottom               // bottom
+                accent,
+                AppColors.GradientBottom
             )
         )
+    }
+
+    fun setFocus(index: Int) {
+        uiState = MapUiState.Focus(index)
+        controller?.focusPin(index, animate = true)
+    }
+
+// Left / Right arrows
+    val promoteAndFocus: (Int) -> Unit = { idx ->
+        // inform parent so 'mode' flips to Focus (this is what pin taps do)
+        onPromoteToFocus(incidents[idx].id)
+        // optimistic local focus for instant UI update
+        uiState = MapUiState.Focus(idx)
+        controller?.focusPin(idx, animate = true)
+    }
+
+    val leftArrowTapped: () -> Unit = fun() {
+        if (incidents.isEmpty()) return
+        when (val s = uiState) {
+            MapUiState.AllPins  -> promoteAndFocus(incidents.lastIndex)
+            is MapUiState.Focus -> promoteAndFocus((s.selectedIndex - 1 + incidents.size) % incidents.size)
+        }
+    }
+
+    val rightArrowTapped: () -> Unit = fun() {
+        if (incidents.isEmpty()) return
+        when (val s = uiState) {
+            MapUiState.AllPins  -> promoteAndFocus(0)
+            is MapUiState.Focus -> promoteAndFocus((s.selectedIndex + 1) % incidents.size)
+        }
+    }
+
+    val idToIncidentIndex = remember(incidents) {
+        incidents.withIndex().associate { it.value.id to it.index }
     }
 
     // reset when modal disappears
@@ -109,8 +237,8 @@ fun IncidentMapModal(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradient)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
+                .navigationBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Top row: Close button
@@ -145,9 +273,24 @@ fun IncidentMapModal(
                 border = BorderStroke(2.dp, Color.White.copy(alpha = 0.08f)),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1221))
             ) {
+                val idToIndex = remember(incidents) {
+                    incidents.mapIndexed { i, it -> it.id to i }.toMap()
+                }
+
                 IncidentMapHost(
                     modifier = Modifier.fillMaxSize(),
-                    onControllerReady = { controller = it }
+                    onControllerReady = { controller = it },
+                    onMarkerClick = { pinId ->
+                        val newIndex = idToIndex[pinId] ?: return@IncidentMapHost
+                        if (mode is MapOpenMode.AllPins) {
+                            // Promote to focus at tapped incident
+                            onPromoteToFocus(pinId)
+                        } else {
+                            // Already focused, just change selection and camera
+                            selected = newIndex
+                            controller?.focusPin(newIndex)
+                        }
+                    }
                 )
             }
 
@@ -155,11 +298,12 @@ fun IncidentMapModal(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Left lane
@@ -167,12 +311,7 @@ fun IncidentMapModal(
                         FilledTonalIconButton(
                             onClick = {
                                 if (incidents.isEmpty()) return@FilledTonalIconButton
-                                val newIndex = (selected - 1 + incidents.size) % incidents.size
-                                if (mode is MapOpenMode.Focus) {
-                                    selected = newIndex
-                                } else {
-                                    onPromoteToFocus(incidents[newIndex].id) // elevate to Focus
-                                }
+                                leftArrowTapped()
                             },
                             enabled = incidents.size > 1
                         ) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Previous") }
@@ -220,18 +359,15 @@ fun IncidentMapModal(
                         FilledTonalIconButton(
                             onClick = {
                                 if (incidents.isEmpty()) return@FilledTonalIconButton
-                                val newIndex = (selected + 1) % incidents.size
-                                if (mode is MapOpenMode.Focus) {
-                                    selected = newIndex
-                                } else {
-                                    onPromoteToFocus(incidents[newIndex].id) // elevate to Focus
-                                }
-                            },
+                                rightArrowTapped()
+                                      },
                             enabled = incidents.size > 1
                         ) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next") }
                     }
                 }
             }
+
+            Spacer(Modifier.height(54.dp))
 
         }
     }
@@ -253,6 +389,7 @@ fun IncidentMapModal_AllPins_Preview() {
         incidents = demoIncidents,
         mode = MapOpenMode.AllPins,
         onClose = {},
+        selectedCity = City.NASHVILLE,
         onPromoteToFocus = {}
     )
 }
@@ -264,6 +401,7 @@ fun IncidentMapModal_Focused_Preview() {
         incidents = demoIncidents,
         mode = MapOpenMode.Focus("2"),
         onClose = {},
+        selectedCity = City.NASHVILLE,
         onPromoteToFocus = {}
     )
 }
