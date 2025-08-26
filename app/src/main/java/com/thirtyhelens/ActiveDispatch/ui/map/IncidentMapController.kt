@@ -25,8 +25,13 @@ class IncidentMapController internal constructor(
     internal val pins: SnapshotStateList<Pin> = mutableStateListOf()
 
     private var map: GoogleMap? = null
-    internal fun attachMap(googleMap: GoogleMap) { map = googleMap }
-    internal fun detachMap() { map = null }
+    internal fun attachMap(googleMap: GoogleMap) {
+        map = googleMap
+    }
+
+    internal fun detachMap() {
+        map = null
+    }
 
     fun setPins(newPins: List<Pin>) {
         pins.clear()
@@ -58,7 +63,11 @@ class IncidentMapController internal constructor(
         if (animate) m.animateCamera(cu) else m.moveCamera(cu)
     }
 
-    fun fitAllPinsOrCenterFallback(center: City, fallbackZoom: Float = 11f, animate: Boolean = true) {
+    fun fitAllPinsOrCenterFallback(
+        center: City,
+        fallbackZoom: Float = 11f,
+        animate: Boolean = true
+    ) {
         val m = map ?: return
         val valid = pins.filter { !(it.position.latitude == 0.0 && it.position.longitude == 0.0) }
         when (valid.size) {
@@ -66,10 +75,12 @@ class IncidentMapController internal constructor(
                 val cu = CameraUpdateFactory.newLatLngZoom(center.fallbackLatLng, fallbackZoom)
                 if (animate) m.animateCamera(cu) else m.moveCamera(cu)
             }
+
             1 -> {
                 val cu = CameraUpdateFactory.newLatLngZoom(valid.first().position, 13f)
                 if (animate) m.animateCamera(cu) else m.moveCamera(cu)
             }
+
             else -> {
                 val builder = LatLngBounds.builder()
                 valid.forEach { builder.include(it.position) }

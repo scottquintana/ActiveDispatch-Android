@@ -1,6 +1,7 @@
 package com.thirtyhelens.ActiveDispatch.ui.home
 
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
@@ -44,7 +45,6 @@ open class ADIncidentsViewModel(
     fun getIncidents(city: City) {
         viewModelScope.launch {
             _loadState.value = LoadState.Loading
-
             // Snapshot the latest location (don’t suspend waiting on GPS).
             val snapshot: LatLng? = locationProvider.locationFlow.value
 
@@ -54,7 +54,6 @@ open class ADIncidentsViewModel(
                 isEmulator() -> city.fallbackLatLng
                 else -> null
             }
-
             if (userLatLng == null) {
                 _incidents.value = emptyList()
                 _loadState.value = LoadState.Error.LocationUnavailable
@@ -62,6 +61,7 @@ open class ADIncidentsViewModel(
             }
 
             val network = runCatching { ADNetworkManager.fetchCity(city) }
+
             network.onSuccess { resp ->
                 val list = resp.places.map { payload ->
                     IncidentMapper.toUi(payload, userLatLng)
@@ -74,8 +74,6 @@ open class ADIncidentsViewModel(
             }
         }
     }
-
-    fun retry(city: City) = getIncidents(city)
 
     private fun isEmulator(): Boolean {
         val fp = Build.FINGERPRINT

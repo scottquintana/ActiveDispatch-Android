@@ -74,12 +74,6 @@ fun IncidentMapHost(
     }
 }
 
-fun hueFromComposeColor(color: Color): Float {
-    val argb = color.toArgb()
-    val hsl = FloatArray(3)
-    ColorUtils.colorToHSL(argb, hsl)
-    return hsl[0] // 0..360
-}
 
 @Composable
 private fun onDisposeOnce(block: () -> Unit) {

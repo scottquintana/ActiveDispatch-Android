@@ -1,9 +1,8 @@
 package com.thirtyhelens.ActiveDispatch.ui.home
 
 import android.util.Log
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -21,13 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.LatLng
 import com.thirtyhelens.ActiveDispatch.R
@@ -45,15 +41,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-// ⬇️ add these imports for the modal
 import com.thirtyhelens.ActiveDispatch.feature.mapmodal.IncidentMapModal
 import com.thirtyhelens.ActiveDispatch.feature.mapmodal.MapOpenMode
 
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-// ^ add lifecycle-runtime-compose dependency if you don't have it:
-// implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3") // or latest
 
 @Composable
 fun HomeScreen(
@@ -61,6 +53,16 @@ fun HomeScreen(
     providedViewModel: ADIncidentsViewModel? = null
 ) {
     val ctx = LocalContext.current.applicationContext
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { /* react to grant/deny here */ }
+
+    LaunchedEffect(Unit) {
+        launcher.launch(arrayOf(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION
+        ))
+    }
 
     val viewModel = providedViewModel ?: remember {
         ADIncidentsViewModel(locationProvider = LocationManager(ctx))
@@ -74,17 +76,10 @@ fun HomeScreen(
     LaunchedEffect(selectedCity) {
         Log.d("HomeScreen", "Fetching incidents for ${selectedCity.name}")
         viewModel.getIncidents(selectedCity)
+        Log.d("ADVM", "Launch effect went")
     }
 
-    var showMap by remember { mutableStateOf(false) }
     var mapMode by remember { mutableStateOf<MapOpenMode?>(null) }
-
-    val closeMapModal: () -> Unit = {
-        showMap = false
-        mapMode = MapOpenMode.AllPins
-    }
-
-    val onMapClick: () -> Unit = { mapMode = MapOpenMode.AllPins }
 
     val onIncidentClick: (ADIncident) -> Unit = { incident ->
         mapMode = MapOpenMode.Focus(incident.id)
@@ -93,7 +88,7 @@ fun HomeScreen(
     Scaffold(
         containerColor = AppColors.BackgroundBlue,
         floatingActionButton = {
-            if (!showMap && loadState is ADIncidentsViewModel.LoadState.Success) {
+            if (loadState is ADIncidentsViewModel.LoadState.Success) {
                 FloatingActionButton(
                     onClick = { mapMode = MapOpenMode.AllPins },
                     containerColor = Color(0xFF4C54FF),
