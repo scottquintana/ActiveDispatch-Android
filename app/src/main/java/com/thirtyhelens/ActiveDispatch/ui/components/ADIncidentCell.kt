@@ -91,7 +91,7 @@ fun ADIncidentCellPreview() {
         id = "asdfawefaw",
         title = "Fight/Assault",
         badge = AlertBadge(
-            color = Color(0xFFF03261),   // your accentRed
+            color = Color(0xFFF03261),
             icon = AppIcons.Shield
         ),
         locationText = formatDistanceAway(

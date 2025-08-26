@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         MapsInitializer.initialize(applicationContext)
         enableEdgeToEdge()
         setContent {
-            HomeScreen() // defaults to City.NASHVILLE; user can switch via picker
+            HomeScreen() // defaults to City.NASHVILLE; will fix in future multi-city versions
         }
     }
 }

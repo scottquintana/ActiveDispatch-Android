@@ -74,6 +74,7 @@ fun IncidentMapModal(
                     .takeIf { it >= 0 } ?: 0
                 uiState = MapUiState.Focus(idx)
             }
+
             MapOpenMode.AllPins -> {
                 // Do not force uiState back to AllPins; allow local promotion via arrows/taps.
             }
@@ -88,14 +89,14 @@ fun IncidentMapModal(
     val pinsForUi = incidents.mapIndexedNotNull { index, inc ->
         val pos = inc.coordinates ?: return@mapIndexedNotNull null
         val showLabel = when (val s = uiState) {
-            MapUiState.AllPins  -> false
+            MapUiState.AllPins -> false
             is MapUiState.Focus -> index == s.selectedIndex
         }
         val descriptor = buildIncidentMarkerDescriptor(
-            context  = ctx,
-            icon     = inc.badge.icon,
-            fillColor= inc.badge.color,
-            label    = if (showLabel) inc.title else null,
+            context = ctx,
+            icon = inc.badge.icon,
+            fillColor = inc.badge.color,
+            label = if (showLabel) inc.title else null,
             labelColor = if (isDark) Color.White else Color.Black
         )
         IncidentMapController.Pin(
@@ -116,7 +117,7 @@ fun IncidentMapModal(
         c.setPins(pinsForUi)
         withFrameNanos { } // ensure map has size before moving camera
         when (val s = uiState) {
-            MapUiState.AllPins  -> c.fitAllPinsOrCenterFallback(selectedCity, 11f)
+            MapUiState.AllPins -> c.fitAllPinsOrCenterFallback(selectedCity, 11f)
             is MapUiState.Focus -> c.focusPin(s.selectedIndex, animate = true)
         }
     }
@@ -128,7 +129,7 @@ fun IncidentMapModal(
 
     // Accent color follows current selection (or default in AllPins).
     val accent = when (uiState) {
-        MapUiState.AllPins  -> AppColors.GradientTop
+        MapUiState.AllPins -> AppColors.GradientTop
         is MapUiState.Focus -> current?.badge?.color ?: AppColors.GradientTop
     }
     val gradient = remember(accent) {
@@ -145,7 +146,7 @@ fun IncidentMapModal(
     // Clean up controller when modal disposes.
     DisposableEffect(Unit) { onDispose { controller = null } }
 
-   // Layout
+    // Layout
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
         Column(
@@ -216,9 +217,10 @@ fun IncidentMapModal(
                             onClick = {
                                 if (incidents.isEmpty()) return@FilledTonalIconButton
                                 when (val s = uiState) {
-                                    MapUiState.AllPins  -> promoteAndFocus(incidents.lastIndex)
+                                    MapUiState.AllPins -> promoteAndFocus(incidents.lastIndex)
                                     is MapUiState.Focus -> {
-                                        val next = (s.selectedIndex - 1 + incidents.size) % incidents.size
+                                        val next =
+                                            (s.selectedIndex - 1 + incidents.size) % incidents.size
                                         promoteAndFocus(next)
                                     }
                                 }
@@ -249,6 +251,7 @@ fun IncidentMapModal(
                                     maxLines = 1
                                 )
                             }
+
                             MapUiState.AllPins -> {
                                 Text(
                                     text = "All incidents",
@@ -272,7 +275,7 @@ fun IncidentMapModal(
                             onClick = {
                                 if (incidents.isEmpty()) return@FilledTonalIconButton
                                 when (val s = uiState) {
-                                    MapUiState.AllPins  -> promoteAndFocus(0)
+                                    MapUiState.AllPins -> promoteAndFocus(0)
                                     is MapUiState.Focus -> {
                                         val next = (s.selectedIndex + 1) % incidents.size
                                         promoteAndFocus(next)

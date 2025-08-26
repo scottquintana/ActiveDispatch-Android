@@ -17,7 +17,7 @@ On the map, tapping an incident reveals its **exact location and additional deta
   Shows distance from your current location (falls back to city center when running in emulator).
 - **Dynamic Badges**  
   Category-driven colors and icons (e.g. burglary alarms, assaults, wires down).
-- **Map Integration (coming soon)**  
+- **Map Integration**  
   Quick access via a floating action button to toggle into map view.
 - **Cross-platform vision**  
   Designed with Ktor + Kotlin serialization, so we can expand to **Kotlin Multiplatform** if needed.
@@ -28,7 +28,7 @@ On the map, tapping an incident reveals its **exact location and additional deta
 - **Kotlin** with coroutines + Flow
 - **Jetpack Compose** for UI
 - **Ktor Client** for networking
-- **Google Maps Compose** (planned for map screen)
+- **Google Maps Compose**
 - **Material 3** components
 - **MVVM** architecture pattern
 
@@ -38,14 +38,6 @@ On the map, tapping an incident reveals its **exact location and additional deta
 - **Home screen**: Hero header + scrollable incident list
 - **Incident cells**: Badge, title, neighborhood + distance, relative time
 - **Map view**: Pins incidents on the map, with tap-to-expand details
-
----
-
-## Roadmap
-- [ ] Map view implementation (Google Maps Compose)
-- [ ] Incident detail screen with extended info
-- [ ] Multi-city support (Portland, SF)
-- [ ] Push notifications for high-severity categories
 
 ---
 

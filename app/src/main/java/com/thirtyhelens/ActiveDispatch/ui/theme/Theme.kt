@@ -1,58 +1,85 @@
 package com.thirtyhelens.ActiveDispatch.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-//private val DarkColorScheme = darkColorScheme(
-//    primary = Purple80,
-//    secondary = PurpleGrey80,
-//    tertiary = Pink80
-//)
-//
-//private val LightColorScheme = lightColorScheme(
-//    primary = Purple40,
-//    secondary = PurpleGrey40,
-//    tertiary = Pink40
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+// Light scheme built from your palette
+private val LightColors = lightColorScheme(
+    primary = AppColors.ButtonBlue,
     onPrimary = Color.White,
+    primaryContainer = AppColors.GradientTop,
+    onPrimaryContainer = Color.White,
+
+    secondary = AppColors.AccentLightPurple,
     onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-//)
-//
-//@Composable
-//fun ActiveDispatchTheme(
-//    darkTheme: Boolean = isSystemInDarkTheme(),
-//    // Dynamic color is available on Android 12+
-//    dynamicColor: Boolean = true,
-//    content: @Composable () -> Unit
-//) {
-//    val colorScheme = when {
-//        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-//            val context = LocalContext.current
-//            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-//        }
-//
-//        darkTheme -> DarkColorScheme
-//        else -> LightColorScheme
-//    }
-//
-//    MaterialTheme(
-//        colorScheme = colorScheme,
-//        typography = Typography,
-//        content = content
-//    )
-//}
+    secondaryContainer = AppColors.GradientBottom,
+    onSecondaryContainer = Color.White,
+
+    tertiary = AppColors.AccentGreen,
+    onTertiary = Color.Black,
+
+    background = AppColors.BackgroundBlue,
+    onBackground = Color(0xFFECEFFF),
+
+    surface = AppColors.BackgroundBlue,
+    onSurface = Color(0xFFECEFFF),
+
+    surfaceVariant = AppColors.GradientBottom,
+    onSurfaceVariant = AppColors.DetailText,
+
+    error = AppColors.AccentRed,
+    onError = Color.White,
+
+    outline = AppColors.DetailText,
+)
+
+// Dark scheme — same base with slightly brighter foregrounds
+private val DarkColors = darkColorScheme(
+    primary = AppColors.ButtonBlue,
+    onPrimary = Color.White,
+    primaryContainer = AppColors.GradientTop,
+    onPrimaryContainer = Color.White,
+
+    secondary = AppColors.AccentLightPurple,
+    onSecondary = Color.White,
+    secondaryContainer = AppColors.GradientBottom,
+    onSecondaryContainer = Color.White,
+
+    tertiary = AppColors.AccentGreen,
+    onTertiary = Color.Black,
+
+    background = AppColors.BackgroundBlue,
+    onBackground = Color(0xFFEFF2FF),
+
+    surface = AppColors.BackgroundBlue,
+    onSurface = Color(0xFFEFF2FF),
+
+    surfaceVariant = AppColors.GradientBottom,
+    onSurfaceVariant = AppColors.DetailText,
+
+    error = AppColors.AccentRed,
+    onError = Color.White,
+
+    outline = AppColors.DetailText,
+)
+
+@Composable
+fun ActiveDispatchTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Disable dynamic color to keep exact brand colors consistent.
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val colors = if (darkTheme) DarkColors else LightColors
+    MaterialTheme(
+        colorScheme = colors,
+        typography = Typography,
+        content = content
+    )
+}
