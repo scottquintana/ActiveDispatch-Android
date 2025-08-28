@@ -73,7 +73,6 @@ fun HomeScreen(
         viewModel.getIncidents(selectedCity, hasLocationPermission = granted)
     }
 
-    // Initial/City-changed load
     LaunchedEffect(selectedCity) {
         Log.d("HomeScreen", "Fetching incidents for ${selectedCity.name}")
         viewModel.getIncidents(
@@ -215,7 +214,7 @@ fun HomeScreen(
     }
 }
 
-/* ---------------- Pull-to-refresh wrapper ---------------- */
+// Pull-to-refresh wrapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -233,7 +232,7 @@ fun RefreshableIncidents(
     ) { content() }
 }
 
-/* ---------------- Small pieces ---------------- */
+// Misc views
 
 @Composable
 private fun LoadingState() { /* unchanged */
@@ -319,7 +318,7 @@ private fun HeroHeader(title: String, imageRes: Int) { /* unchanged */
     }
 }
 
-/* ---------------- Helpers ---------------- */
+// Helpers
 
 private fun hasLocationPermission(context: Context): Boolean {
     val fine = ContextCompat.checkSelfPermission(
@@ -331,16 +330,7 @@ private fun hasLocationPermission(context: Context): Boolean {
     return fine || coarse
 }
 
-/* ---------------- Preview scaffolding (same as before) ---------------- */
-
-private class FakeLocationProvider(
-    latLng: LatLng? = LatLng(36.1627, -86.7816)
-) : LocationProvider {
-    private val _flow = MutableStateFlow(latLng)
-    override val locationFlow: StateFlow<LatLng?> = _flow
-    override fun startLocationUpdates(scope: CoroutineScope) {}
-    override fun stopLocationUpdates() {}
-}
+// Preview scaffolding
 
 @Preview(showBackground = true, backgroundColor = 0xFF0B0E2A)
 @Composable

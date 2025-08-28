@@ -44,19 +44,17 @@ open class ADIncidentsViewModel(
     }
 
     suspend fun getIncidentsSuspend(
-        city: City,                // tweak as you like
-        hasLocationPermission: Boolean              // inject from caller
+        city: City,
+        hasLocationPermission: Boolean
     ) {
         _loadState.value = LoadState.Loading
 
-        // 1) Permission gate
         if (!hasLocationPermission) {
             _incidents.value = emptyList()
             _loadState.value = LoadState.Error.LocationPermissionRequired
             return
         }
 
-        // 2) Wait for a non-null location
         val userLatLng: LatLng? = withTimeoutOrNull(waitForLocationMs) {
             locationProvider.locationFlow.filterNotNull().first()
         } ?: run {
@@ -70,7 +68,6 @@ open class ADIncidentsViewModel(
             return
         }
 
-        // 3) Fetch + map
         val network = runCatching { ADNetworkManager.fetchCity(city) }
         network.onSuccess { resp ->
             val list = resp.places.map { IncidentMapper.toUi(it, userLatLng) }
