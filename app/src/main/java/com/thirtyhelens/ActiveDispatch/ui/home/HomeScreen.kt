@@ -1,5 +1,8 @@
 package com.thirtyhelens.ActiveDispatch.ui.home
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +30,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.LatLng
 import com.thirtyhelens.ActiveDispatch.R
+import com.thirtyhelens.ActiveDispatch.feature.mapmodal.IncidentMapModal
+import com.thirtyhelens.ActiveDispatch.feature.mapmodal.MapOpenMode
 import com.thirtyhelens.ActiveDispatch.models.ADIncident
 import com.thirtyhelens.ActiveDispatch.models.ADResponse
 import com.thirtyhelens.ActiveDispatch.models.City
@@ -40,11 +45,7 @@ import com.thirtyhelens.ActiveDispatch.utils.LocationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-
-import com.thirtyhelens.ActiveDispatch.feature.mapmodal.IncidentMapModal
-import com.thirtyhelens.ActiveDispatch.feature.mapmodal.MapOpenMode
-
-import androidx.compose.runtime.getValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
@@ -52,31 +53,32 @@ fun HomeScreen(
     initialCity: City = City.NASHVILLE,
     providedViewModel: ADIncidentsViewModel? = null
 ) {
-    val ctx = LocalContext.current.applicationContext
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { /* react to grant/deny here */ }
-
-    LaunchedEffect(Unit) {
-        launcher.launch(arrayOf(
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-            android.Manifest.permission.ACCESS_COARSE_LOCATION
-        ))
-    }
-
+    val appCtx = LocalContext.current.applicationContext
     val viewModel = providedViewModel ?: remember {
-        ADIncidentsViewModel(locationProvider = LocationManager(ctx))
+        ADIncidentsViewModel(locationProvider = LocationManager(appCtx))
     }
 
     var selectedCity by remember { mutableStateOf(initialCity) }
-
     val incidents by viewModel.incidents.collectAsStateWithLifecycle(initialValue = emptyList())
     val loadState by viewModel.loadState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
+
+    // Single launcher we use on-demand whenever we need permission
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        val granted = (result[Manifest.permission.ACCESS_FINE_LOCATION] == true) ||
+                (result[Manifest.permission.ACCESS_COARSE_LOCATION] == true)
+        viewModel.getIncidents(selectedCity, hasLocationPermission = granted)
+    }
+
     LaunchedEffect(selectedCity) {
         Log.d("HomeScreen", "Fetching incidents for ${selectedCity.name}")
-        viewModel.getIncidents(selectedCity)
-        Log.d("ADVM", "Launch effect went")
+        viewModel.getIncidents(
+            city = selectedCity,
+            hasLocationPermission = hasLocationPermission(context)
+        )
     }
 
     var mapMode by remember { mutableStateOf<MapOpenMode?>(null) }
@@ -101,7 +103,6 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Top
         ) {
-            // Header stays at the top, outside the refresh area
             HeroHeader(title = "Active Dispatch", imageRes = R.drawable.nashville_header)
             Spacer(Modifier.height(8.dp))
 
@@ -112,10 +113,21 @@ fun HomeScreen(
                 }
 
                 is ADIncidentsViewModel.LoadState.Success -> {
-                    // Pull‑to‑refresh wraps ONLY the scrolling list content
                     RefreshableIncidents(
                         isLoading = loadState is ADIncidentsViewModel.LoadState.Loading,
-                        onRefresh = { viewModel.getIncidents(selectedCity) }
+                        onRefresh = {
+                            val granted = hasLocationPermission(context)
+                            if (granted) {
+                                viewModel.getIncidents(selectedCity, granted)
+                            } else {
+                                permissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            }
+                        }
                     ) {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -144,14 +156,45 @@ fun HomeScreen(
                         ADIncidentsViewModel.LoadState.Error.LocationUnavailable ->
                             ErrorState(
                                 message = "We couldn’t access your location.",
-                                onRetry = { viewModel.getIncidents(selectedCity) }
+                                onRetry = {
+                                    val granted = hasLocationPermission(context)
+                                    if (granted) {
+                                        viewModel.getIncidents(selectedCity, true)
+                                    } else {
+                                        permissionLauncher.launch(
+                                            arrayOf(
+                                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    }
+                                }
                             )
 
                         is ADIncidentsViewModel.LoadState.Error.Network ->
                             ErrorState(
                                 message = "We couldn’t load incidents.",
-                                onRetry = { viewModel.getIncidents(selectedCity) }
+                                onRetry = {
+                                    viewModel.getIncidents(
+                                        selectedCity,
+                                        hasLocationPermission(context)
+                                    )
+                                }
                             )
+
+                        is ADIncidentsViewModel.LoadState.Error.LocationPermissionRequired -> {
+                            ErrorState(
+                                message = "Location permission is required.",
+                                onRetry = {
+                                    permissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -171,24 +214,26 @@ fun HomeScreen(
     }
 }
 
+// Pull-to-refresh wrapper
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RefreshableIncidents(
-    isLoading: Boolean,          // e.g., loadState is Loading
-    onRefresh: () -> Unit,       // call viewModel.getIncidents(...)
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
     content: @Composable () -> Unit
 ) {
     val pullState = rememberPullToRefreshState()
-
     PullToRefreshBox(
         isRefreshing = isLoading,
         onRefresh = onRefresh,
         state = pullState,
         modifier = Modifier.fillMaxSize()
-    ) {
-        content()
-    }
+    ) { content() }
 }
+
+// Misc views
+
 @Composable
 private fun LoadingState() {
     Column(
@@ -209,10 +254,7 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit
-) {
+private fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -220,16 +262,15 @@ private fun ErrorState(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Optional: replace with your own drawable
         Icon(
             imageVector = AppIcons.TriangleExclamation,
             contentDescription = null,
-            tint = Color(0xFFFFC107), // amber-ish
+            tint = Color(0xFFFFC107),
             modifier = Modifier.size(56.dp)
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = "We couldn’t load incidents.",
+            text = message,
             style = MaterialTheme.typography.titleMedium,
             color = Color.White
         )
@@ -240,19 +281,12 @@ private fun ErrorState(
             color = Color(0xCCFFFFFF)
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Try again")
-        }
+        Button(onClick = onRetry) { Text("Try again") }
     }
 }
 
-// Top hero with skyline image + gradient + big title
-// Will need to be dynamic when multi city is implemented
 @Composable
-private fun HeroHeader(
-    title: String,
-    imageRes: Int,
-) {
+private fun HeroHeader(title: String, imageRes: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -284,16 +318,19 @@ private fun HeroHeader(
     }
 }
 
-// Preview scaffolding
+// Helpers
 
-private class FakeLocationProvider(
-    latLng: LatLng? = LatLng(36.1627, -86.7816)
-) : LocationProvider {
-    private val _flow = MutableStateFlow(latLng)
-    override val locationFlow: StateFlow<LatLng?> = _flow
-    override fun startLocationUpdates(scope: CoroutineScope) { /* no-op */ }
-    override fun stopLocationUpdates() { /* no-op */ }
+private fun hasLocationPermission(context: Context): Boolean {
+    val fine = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val coarse = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    return fine || coarse
 }
+
+// Preview scaffolding
 
 @Preview(showBackground = true, backgroundColor = 0xFF0B0E2A)
 @Composable
@@ -302,7 +339,6 @@ fun HomeScreenPreview() {
     val mockIncidents = remember {
         ADResponse.mockData.places.map { IncidentMapper.toUi(it, userLatLng) }
     }
-
     val fakeVm = remember {
         object : ADIncidentsViewModel(locationProvider = object : LocationProvider {
             private val _flow = MutableStateFlow(userLatLng)
@@ -313,8 +349,5 @@ fun HomeScreenPreview() {
             override val incidents: StateFlow<List<ADIncident>> = MutableStateFlow(mockIncidents)
         }
     }
-
-    HomeScreen(
-        providedViewModel = fakeVm,
-    )
+    HomeScreen(providedViewModel = fakeVm)
 }

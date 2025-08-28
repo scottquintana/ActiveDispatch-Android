@@ -18,7 +18,7 @@
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_inset</item>
         <item name="postSplashScreenTheme">@style/Theme.ActiveDispatch</item>
-        <item name="splashScreenIconSize">400dp</item>
+        <item name="splashScreenIconSize">200dp</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
         <item name="windowActionBar">false</item>
