@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -17,8 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.LatLng
 import com.thirtyhelens.ActiveDispatch.maps.IncidentMapController
@@ -148,61 +152,228 @@ fun IncidentMapModal(
 
     // Layout
 
+//    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
+//        Column(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .background(gradient)
+////                .navigationBarsPadding()
+//                .padding(horizontal = 12.dp, vertical = 8.dp),
+//            verticalArrangement = Arrangement.spacedBy(8.dp)
+//        ) {
+//            // Top row: Close button
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.Center
+//            ) {
+//                FilledTonalButton(
+//                    onClick = onClose,
+//                    shape = RoundedCornerShape(22.dp),
+//                    modifier = Modifier.height(26.dp),
+//                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp)
+//                ) {
+//                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                        Text("CLOSE")
+//                        Spacer(Modifier.width(4.dp))
+//                        Icon(
+//                            imageVector = Icons.Filled.ArrowDropDown,
+//                            contentDescription = "Dropdown Icon",
+//                            modifier = Modifier.size(18.dp)
+//                        )
+//                    }
+//                }
+//            }
+//
+//            // Middle row: Map
+//            Card(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .weight(1f),
+//                shape = RoundedCornerShape(26.dp),
+//                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.08f)),
+//                colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1221))
+//            ) {
+//                IncidentMapHost(
+//                    modifier = Modifier.fillMaxSize(),
+//                    onControllerReady = { controller = it },
+//                    onMarkerClick = { pinId ->
+//                        val newIndex = idToIndex[pinId] ?: return@IncidentMapHost
+//                        promoteAndFocus(newIndex)
+//                    }
+//                )
+//            }
+//
+//            // Bottom controls
+//            Column(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .windowInsetsPadding(
+//                        // safeDrawing handles both gesture nav + 3-button nav + cutouts
+//                        WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+//                    )
+//                    .padding(horizontal = 8.dp, vertical = 6.dp)
+//            ) {
+//                Row(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .height(50.dp),
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//                    // Left arrow
+//                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+//                        FilledTonalIconButton(
+//                            onClick = {
+//                                if (incidents.isEmpty()) return@FilledTonalIconButton
+//                                when (val s = uiState) {
+//                                    MapUiState.AllPins -> promoteAndFocus(incidents.lastIndex)
+//                                    is MapUiState.Focus -> {
+//                                        val next =
+//                                            (s.selectedIndex - 1 + incidents.size) % incidents.size
+//                                        promoteAndFocus(next)
+//                                    }
+//                                }
+//                            },
+//                            enabled = incidents.size > 1
+//                        ) {
+//                            Icon(Icons.Rounded.ArrowBack, contentDescription = "Previous")
+//                        }
+//                    }
+//
+//                    // Center info (driven by uiState)
+//                    Column(
+//                        modifier = Modifier.weight(1f),
+//                        horizontalAlignment = Alignment.CenterHorizontally
+//                    ) {
+//                        when (uiState) {
+//                            is MapUiState.Focus -> {
+//                                Text(
+//                                    text = current?.locationText.orEmpty(),
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    color = Color.White,
+//                                    maxLines = 1
+//                                )
+//                                Text(
+//                                    text = current?.timeAgo.orEmpty(),
+//                                    style = MaterialTheme.typography.bodyMedium,
+//                                    color = AppColors.DetailText,
+//                                    maxLines = 1
+//                                )
+//                            }
+//
+//                            MapUiState.AllPins -> {
+//                                Text(
+//                                    text = "All incidents",
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    color = Color.White.copy(alpha = 0.85f),
+//                                    maxLines = 1
+//                                )
+//                                Text(
+//                                    text = "${incidents.size} total",
+//                                    style = MaterialTheme.typography.bodyMedium,
+//                                    color = AppColors.DetailText,
+//                                    maxLines = 1
+//                                )
+//                            }
+//                        }
+//                    }
+//
+//                    // Right arrow
+//                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+//                        FilledTonalIconButton(
+//                            onClick = {
+//                                if (incidents.isEmpty()) return@FilledTonalIconButton
+//                                when (val s = uiState) {
+//                                    MapUiState.AllPins -> promoteAndFocus(0)
+//                                    is MapUiState.Focus -> {
+//                                        val next = (s.selectedIndex + 1) % incidents.size
+//                                        promoteAndFocus(next)
+//                                    }
+//                                }
+//                            },
+//                            enabled = incidents.size > 1
+//                        ) {
+//                            Icon(
+//                                Icons.AutoMirrored.Rounded.ArrowForward,
+//                                contentDescription = "Next"
+//                            )
+//                        }
+//                    }
+//                }
+//            }
+//
+////            Spacer(Modifier.height(bottomSafe(54.dp)))
+//        }
+//    }
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradient)
-                .navigationBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            // Top row: Close button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+            // 1) Track controls height
+            var controlsHeightPx by remember { mutableStateOf(0) }
+            val controlsHeightDp = with(LocalDensity.current) { controlsHeightPx.toDp() }
+
+            // 2) Main content (close row + map), padded by the measured controls height
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = controlsHeightDp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilledTonalButton(
-                    onClick = onClose,
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.height(26.dp),
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp)
+                // Close row (unchanged)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("CLOSE")
-                        Spacer(Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Filled.ArrowDropDown,
-                            contentDescription = "Dropdown Icon",
-                            modifier = Modifier.size(18.dp)
-                        )
+                    FilledTonalButton(
+                        onClick = onClose,
+                        shape = RoundedCornerShape(22.dp),
+                        modifier = Modifier.height(26.dp),
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("CLOSE")
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = "Dropdown Icon",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
+                }
+
+                // Map card (unchanged)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    shape = RoundedCornerShape(26.dp),
+                    border = BorderStroke(2.dp, Color.White.copy(alpha = 0.08f)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1221))
+                ) {
+                    IncidentMapHost(
+                        modifier = Modifier.fillMaxSize(),
+                        onControllerReady = { controller = it },
+                        onMarkerClick = { pinId ->
+                            val newIndex = idToIndex[pinId] ?: return@IncidentMapHost
+                            promoteAndFocus(newIndex)
+                        }
+                    )
                 }
             }
 
-            // Middle row: Map
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                shape = RoundedCornerShape(26.dp),
-                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.08f)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1221))
-            ) {
-                IncidentMapHost(
-                    modifier = Modifier.fillMaxSize(),
-                    onControllerReady = { controller = it },
-                    onMarkerClick = { pinId ->
-                        val newIndex = idToIndex[pinId] ?: return@IncidentMapHost
-                        promoteAndFocus(newIndex)
-                    }
-                )
-            }
-
-            // Bottom controls
+            // 3) Bottom controls overlaid and inset-aware
             Column(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .onSizeChanged { controlsHeightPx = it.height } // measure real height
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+                    )
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
                 Row(
@@ -211,7 +382,7 @@ fun IncidentMapModal(
                         .height(50.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left arrow
+                    // Left / center / right blocks — your existing code
                     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                         FilledTonalIconButton(
                             onClick = {
@@ -219,57 +390,39 @@ fun IncidentMapModal(
                                 when (val s = uiState) {
                                     MapUiState.AllPins -> promoteAndFocus(incidents.lastIndex)
                                     is MapUiState.Focus -> {
-                                        val next =
-                                            (s.selectedIndex - 1 + incidents.size) % incidents.size
+                                        val next = (s.selectedIndex - 1 + incidents.size) % incidents.size
                                         promoteAndFocus(next)
                                     }
                                 }
                             },
                             enabled = incidents.size > 1
-                        ) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = "Previous")
-                        }
+                        ) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Previous") }
                     }
 
-                    // Center info (driven by uiState)
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         when (uiState) {
                             is MapUiState.Focus -> {
-                                Text(
-                                    text = current?.locationText.orEmpty(),
+                                Text(current?.locationText.orEmpty(),
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White,
-                                    maxLines = 1
-                                )
-                                Text(
-                                    text = current?.timeAgo.orEmpty(),
+                                    color = Color.White, maxLines = 1)
+                                Text(current?.timeAgo.orEmpty(),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.DetailText,
-                                    maxLines = 1
-                                )
+                                    color = AppColors.DetailText, maxLines = 1)
                             }
-
                             MapUiState.AllPins -> {
-                                Text(
-                                    text = "All incidents",
+                                Text("All incidents",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White.copy(alpha = 0.85f),
-                                    maxLines = 1
-                                )
-                                Text(
-                                    text = "${incidents.size} total",
+                                    color = Color.White.copy(alpha = 0.85f), maxLines = 1)
+                                Text("${incidents.size} total",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.DetailText,
-                                    maxLines = 1
-                                )
+                                    color = AppColors.DetailText, maxLines = 1)
                             }
                         }
                     }
 
-                    // Right arrow
                     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                         FilledTonalIconButton(
                             onClick = {
@@ -284,18 +437,21 @@ fun IncidentMapModal(
                             },
                             enabled = incidents.size > 1
                         ) {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowForward,
-                                contentDescription = "Next"
-                            )
+                            Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next")
                         }
                     }
                 }
             }
-
-            Spacer(Modifier.height(54.dp))
         }
     }
+}
+
+@Composable
+private fun bottomSafe(fallback: Dp = 24.dp): Dp {
+    // Works on modern devices; API 28 dialogs often return 0 → use fallback.
+    val pv = WindowInsets.safeDrawing.asPaddingValues()
+    val bottom = pv.calculateBottomPadding()
+    return if (bottom > 0.dp) bottom else fallback
 }
 
 // Previews

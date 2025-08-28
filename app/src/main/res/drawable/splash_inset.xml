@@ -1,6 +1,6 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@mipmap/ic_launcher_foreground"
-    android:insetLeft="20dp"
-    android:insetRight="20dp"
-    android:insetTop="20dp"
-    android:insetBottom="20dp"/>
+    android:drawable="@drawable/ad_splashlogo"
+    android:insetLeft="50dp"
+    android:insetRight="50dp"
+    android:insetTop="50dp"
+    android:insetBottom="50dp"/>

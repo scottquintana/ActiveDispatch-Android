@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.foundation.layout)
     debugImplementation(libs.androidx.ui.tooling)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))

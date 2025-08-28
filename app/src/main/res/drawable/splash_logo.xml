@@ -11,7 +11,7 @@
 
     <!-- Your logo, padded inside the circle -->
     <item
-        android:drawable="@mipmap/ic_launcher_foreground"
+        android:drawable="@drawable/ad_splashlogo"
         android:insetLeft="30dp"
         android:insetTop="30dp"
         android:insetRight="30dp"
