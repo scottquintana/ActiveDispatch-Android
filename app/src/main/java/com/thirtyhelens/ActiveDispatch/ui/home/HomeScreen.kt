@@ -235,7 +235,7 @@ fun RefreshableIncidents(
 // Misc views
 
 @Composable
-private fun LoadingState() { /* unchanged */
+private fun LoadingState() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -254,7 +254,7 @@ private fun LoadingState() { /* unchanged */
 }
 
 @Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) { /* unchanged text */
+private fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -286,7 +286,7 @@ private fun ErrorState(message: String, onRetry: () -> Unit) { /* unchanged text
 }
 
 @Composable
-private fun HeroHeader(title: String, imageRes: Int) { /* unchanged */
+private fun HeroHeader(title: String, imageRes: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
