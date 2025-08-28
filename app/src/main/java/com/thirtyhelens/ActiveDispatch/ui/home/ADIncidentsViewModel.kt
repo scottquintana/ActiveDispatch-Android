@@ -13,7 +13,10 @@ import com.thirtyhelens.ActiveDispatch.utils.ADNetworkManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 open class ADIncidentsViewModel(
     private val locationProvider: LocationProvider
@@ -24,10 +27,8 @@ open class ADIncidentsViewModel(
         data object Loading : LoadState()
         data class Success(val data: List<ADIncident>) : LoadState()
         sealed class Error : LoadState() {
-            // No user location available (permissions off/denied/GPS off).
+            data object LocationPermissionRequired : Error()
             data object LocationUnavailable : Error()
-
-            //Network failed when fetching incidents.
             data class Network(val cause: Throwable) : Error()
         }
     }
@@ -37,41 +38,59 @@ open class ADIncidentsViewModel(
 
     private val _loadState = MutableStateFlow<LoadState>(LoadState.Idle)
     val loadState: StateFlow<LoadState> = _loadState.asStateFlow()
-
+    val waitForLocationMs: Long = 8_000L
     init {
         locationProvider.startLocationUpdates(viewModelScope)
     }
 
-    fun getIncidents(city: City) {
+    suspend fun getIncidentsSuspend(
+        city: City,                // tweak as you like
+        hasLocationPermission: Boolean              // inject from caller
+    ) {
+        _loadState.value = LoadState.Loading
+
+        // 1) Permission gate
+        if (!hasLocationPermission) {
+            _incidents.value = emptyList()
+            _loadState.value = LoadState.Error.LocationPermissionRequired
+            return
+        }
+
+        // 2) Wait for a non-null location
+        val userLatLng: LatLng? = withTimeoutOrNull(waitForLocationMs) {
+            locationProvider.locationFlow.filterNotNull().first()
+        } ?: run {
+            // no location within timeout
+            if (isEmulator()) city.fallbackLatLng else null
+        }
+
+        if (userLatLng == null) {
+            _incidents.value = emptyList()
+            _loadState.value = LoadState.Error.LocationUnavailable
+            return
+        }
+
+        // 3) Fetch + map
+        val network = runCatching { ADNetworkManager.fetchCity(city) }
+        network.onSuccess { resp ->
+            val list = resp.places.map { IncidentMapper.toUi(it, userLatLng) }
+            _incidents.value = list
+            _loadState.value = LoadState.Success(list)
+        }.onFailure { t ->
+            _incidents.value = emptyList()
+            _loadState.value = LoadState.Error.Network(t)
+        }
+    }
+
+    fun getIncidents(
+        city: City,
+        hasLocationPermission: Boolean
+    ) {
         viewModelScope.launch {
-            _loadState.value = LoadState.Loading
-            // Snapshot the latest location (don’t suspend waiting on GPS).
-            val snapshot: LatLng? = locationProvider.locationFlow.value
-
-            // In emulator we allow a city fallback; on real device we surface a location error.
-            val userLatLng: LatLng? = when {
-                snapshot != null -> snapshot
-                isEmulator() -> city.fallbackLatLng
-                else -> null
-            }
-            if (userLatLng == null) {
-                _incidents.value = emptyList()
-                _loadState.value = LoadState.Error.LocationUnavailable
-                return@launch
-            }
-
-            val network = runCatching { ADNetworkManager.fetchCity(city) }
-
-            network.onSuccess { resp ->
-                val list = resp.places.map { payload ->
-                    IncidentMapper.toUi(payload, userLatLng)
-                }
-                _incidents.value = list
-                _loadState.value = LoadState.Success(list)
-            }.onFailure { t ->
-                _incidents.value = emptyList()
-                _loadState.value = LoadState.Error.Network(t)
-            }
+            getIncidentsSuspend(
+                city = city,
+                hasLocationPermission = hasLocationPermission
+            )
         }
     }
 
