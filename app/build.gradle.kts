@@ -76,6 +76,7 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.0-beta04")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:2.11.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
