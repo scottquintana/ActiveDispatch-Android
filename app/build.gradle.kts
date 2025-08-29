@@ -1,9 +1,17 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.jetbrains.compose.compiler)
+
 }
+
+val mapsApiKey: String =
+    gradleLocalProperties(rootDir, providers).getProperty("MAPS_API_KEY")
+        ?: System.getenv("MAPS_API_KEY")
+        ?: ""
 
 android {
     namespace = "com.thirtyhelens.ActiveDispatch"
@@ -16,9 +24,8 @@ android {
         versionCode = 1
         versionName = "1.0"
         vectorDrawables { useSupportLibrary = true }
-        val mapsKey = project.findProperty("MAPS_API_KEY") as String? ?: ""
-        manifestPlaceholders["MAPS_API_KEY"] = mapsKey
-    }
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -76,6 +83,7 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.0-beta04")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:2.11.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

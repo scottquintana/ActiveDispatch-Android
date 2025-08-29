@@ -49,17 +49,25 @@ open class ADIncidentsViewModel(
     ) {
         _loadState.value = LoadState.Loading
 
-        if (!hasLocationPermission) {
-            _incidents.value = emptyList()
-            _loadState.value = LoadState.Error.LocationPermissionRequired
-            return
+        val userLatLng: LatLng? = if (hasLocationPermission) {
+            // Try GPS first (timeout), then fall back to city center
+            withTimeoutOrNull(waitForLocationMs) {
+                locationProvider.locationFlow.filterNotNull().first()
+            } ?: city.fallbackLatLng
+        } else {
+            // No permission, use city fallback only
+            city.fallbackLatLng
         }
 
-        val userLatLng: LatLng? = withTimeoutOrNull(waitForLocationMs) {
-            locationProvider.locationFlow.filterNotNull().first()
-        } ?: run {
-            // no location within timeout
-            if (isEmulator()) city.fallbackLatLng else null
+        // If we still don't have a location, error out appropriately
+        if (userLatLng == null) {
+            _incidents.value = emptyList()
+            _loadState.value = if (hasLocationPermission) {
+                LoadState.Error.LocationUnavailable
+            } else {
+                LoadState.Error.LocationPermissionRequired
+            }
+            return
         }
 
         if (userLatLng == null) {

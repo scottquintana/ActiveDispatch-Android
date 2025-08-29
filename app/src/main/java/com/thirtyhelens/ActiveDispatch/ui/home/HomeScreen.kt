@@ -276,7 +276,7 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = "Check your internet connection and try again.",
+            text = "Check your settings and try again.",
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xCCFFFFFF)
         )
