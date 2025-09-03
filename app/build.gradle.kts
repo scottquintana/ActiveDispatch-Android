@@ -5,7 +5,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.jetbrains.compose.compiler)
-
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 val mapsApiKey: String =
@@ -26,6 +27,14 @@ android {
         vectorDrawables { useSupportLibrary = true }
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         }
+
+//    buildTypes {
+//        release {
+//            isMinifyEnabled = true
+//            isShrinkResources = true
+//
+//        }
+//    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -84,6 +93,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:2.11.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-
+    implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics-ndk")
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

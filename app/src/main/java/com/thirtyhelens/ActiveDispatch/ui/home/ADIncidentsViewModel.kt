@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
+import com.thirtyhelens.ActiveDispatch.analytics.Analytics
 import com.thirtyhelens.ActiveDispatch.models.ADIncident
 import com.thirtyhelens.ActiveDispatch.models.City
 import com.thirtyhelens.ActiveDispatch.ui.mapping.IncidentMapper
@@ -56,7 +57,9 @@ open class ADIncidentsViewModel(
             } ?: city.fallbackLatLng
         } else {
             // No permission, use city fallback only
+            Analytics.logCustomEvent("use_fallback_user_location")
             city.fallbackLatLng
+
         }
 
         // If we still don't have a location, error out appropriately
@@ -84,6 +87,15 @@ open class ADIncidentsViewModel(
         }.onFailure { t ->
             _incidents.value = emptyList()
             _loadState.value = LoadState.Error.Network(t)
+
+            Analytics.logCustomEvent(
+                "network_error",
+                mapOf(
+                    "city" to city.name,
+                    "error_type" to (t::class.simpleName ?: "Unknown"),
+                    "message" to (t.message ?: "No message")
+                )
+            )
         }
     }
 
