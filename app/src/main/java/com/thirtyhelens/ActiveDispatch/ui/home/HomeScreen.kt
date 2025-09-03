@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.thirtyhelens.ActiveDispatch.analytics.Analytics
 
 @Composable
 fun HomeScreen(
@@ -84,6 +85,7 @@ fun HomeScreen(
     var mapMode by remember { mutableStateOf<MapOpenMode?>(null) }
 
     val onIncidentClick: (ADIncident) -> Unit = { incident ->
+        Analytics.logIncidentTypeTapped(incident.title)
         mapMode = MapOpenMode.Focus(incident.id)
     }
 
@@ -92,7 +94,10 @@ fun HomeScreen(
         floatingActionButton = {
             if (loadState is ADIncidentsViewModel.LoadState.Success) {
                 FloatingActionButton(
-                    onClick = { mapMode = MapOpenMode.AllPins },
+                    onClick = {
+                        mapMode = MapOpenMode.AllPins
+                        Analytics.logCustomEvent("open_all_pins")
+                              },
                     containerColor = Color(0xFF4C54FF),
                 ) { Icon(AppIcons.Map, contentDescription = "Map", tint = Color.White) }
             }
@@ -159,8 +164,10 @@ fun HomeScreen(
                                 onRetry = {
                                     val granted = hasLocationPermission(context)
                                     if (granted) {
+                                        Analytics.logCustomEvent("retry_location_granted")
                                         viewModel.getIncidents(selectedCity, true)
                                     } else {
+                                        Analytics.logCustomEvent("retry_location_permission_requested")
                                         permissionLauncher.launch(
                                             arrayOf(
                                                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -186,6 +193,7 @@ fun HomeScreen(
                             ErrorState(
                                 message = "Location permission is required.",
                                 onRetry = {
+                                    Analytics.logCustomEvent("retry_location_permission_requested")
                                     permissionLauncher.launch(
                                         arrayOf(
                                             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -207,7 +215,10 @@ fun HomeScreen(
                     mode = mapMode!!,
                     onClose = { mapMode = null },
                     selectedCity = selectedCity,
-                    onPromoteToFocus = { id -> mapMode = MapOpenMode.Focus(id) }
+                    onPromoteToFocus = { id ->
+                        Analytics.logCustomEvent("promote_to_focus")
+                        mapMode = MapOpenMode.Focus(id)
+                    }
                 )
             }
         }
@@ -226,7 +237,11 @@ fun RefreshableIncidents(
     val pullState = rememberPullToRefreshState()
     PullToRefreshBox(
         isRefreshing = isLoading,
-        onRefresh = onRefresh,
+        onRefresh = {
+            Analytics.logCustomEvent("pull_to_refresh")
+
+            onRefresh()
+        },
         state = pullState,
         modifier = Modifier.fillMaxSize()
     ) { content() }
